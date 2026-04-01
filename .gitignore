@@ -1,0 +1,5 @@
+cf_embeddings.pkl
+.env
+__pycache__/
+*.pyc
+.DS_Store
