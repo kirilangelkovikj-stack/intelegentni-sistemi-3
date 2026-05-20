@@ -3,11 +3,11 @@ Codeforces Semantic Search Engine
 Run: python search_engine.py
 Then open: http://localhost:5000
 
-AI Solutions powered by Google Gemini (free tier).
-Get your free key at: https://aistudio.google.com/app/apikey
+AI Solutions powered by Groq (free tier, no credit card needed).
+Get your free key at: https://console.groq.com
 Then run:
-  set GEMINI_API_KEY=your-key-here        (Windows)
-  export GEMINI_API_KEY="your-key-here"   (Mac/Linux)
+  set GROQ_API_KEY=your-key-here        (Windows)
+  export GROQ_API_KEY="your-key-here"   (Mac/Linux)
   python search_engine.py --dataset CodeForces.csv
 """
 
@@ -58,33 +58,55 @@ def load_dataset(path: str) -> list[dict]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  GEMINI — AI SOLUTION
+#  GROQ — AI SOLUTION (free API, no payment needed)
+#  Get your free key at: https://console.groq.com
 # ─────────────────────────────────────────────────────────────────────────────
 
-def call_gemini(prompt: str, api_key: str) -> str:
-    """Call Gemini 2.0 Flash (free tier) and return the text response."""
-    import urllib.request
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+def call_groq(prompt: str, model: str = "qwen-qwq-32b") -> str:
+    """Call Groq free API using curl subprocess to avoid urllib header issues."""
+    import subprocess, tempfile
+
+    if not GROQ_API_KEY:
+        raise RuntimeError(
+            "GROQ_API_KEY not set. Get a free key at https://console.groq.com "
+            "then run:  set GROQ_API_KEY=your-key-here  (Windows) "
+            "or  export GROQ_API_KEY=your-key-here  (Mac/Linux)"
+        )
 
     payload = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "maxOutputTokens": 1500,
-            "temperature": 0.2,
-        }
-    }).encode()
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 1500,
+    })
 
-    req = urllib.request.Request(
-        url,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+    # Write payload to temp file to avoid command-line escaping issues on Windows
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
+        f.write(payload)
+        tmp_path = f.name
 
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        data = json.loads(resp.read())
-        return data["candidates"][0]["content"]["parts"][0]["text"]
+    try:
+        result = subprocess.run(
+            [
+                "curl", "-s",
+                "https://api.groq.com/openai/v1/chat/completions",
+                "-H", "Content-Type: application/json",
+                "-H", f"Authorization: Bearer {GROQ_API_KEY}",
+                "-d", f"@{tmp_path}",
+            ],
+            capture_output=True, text=True, timeout=60
+        )
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+    if result.returncode != 0:
+        raise RuntimeError(f"curl failed: {result.stderr}")
+
+    data = json.loads(result.stdout)
+    if "error" in data:
+        raise RuntimeError(data["error"].get("message", str(data["error"])))
+    return data["choices"][0]["message"]["content"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -237,18 +259,18 @@ HTML = r"""<!DOCTYPE html>
 </header>
 <main>
   <div id="no-key-banner" class="no-key-banner" style="display:none">
-    <b>⚠️ No Gemini API key found — AI solutions are disabled.</b><br>
-    Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>, then restart the server:<br>
-    <code>set GEMINI_API_KEY=your-key-here</code> &nbsp;then&nbsp; <code>python search_engine.py --dataset CodeForces.csv</code>
+    <b>⚠️ GROQ_API_KEY not set — AI solutions won't work.</b><br>
+    Get a free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a>, then run:
+    <code>set GROQ_API_KEY=your-key-here</code> (Windows) or
+    <code>export GROQ_API_KEY=your-key-here</code> (Mac/Linux)
   </div>
   <div id="status">Ready — type a query and press Search.</div>
   <div id="results"></div>
 </main>
 
 <script>
-const HAS_GEMINI_KEY = __HAS_GEMINI_KEY__;
-
-if (!HAS_GEMINI_KEY) {
+const HAS_GROQ_KEY = __HAS_GEMINI_KEY__;
+if (!HAS_GROQ_KEY) {
   document.getElementById('no-key-banner').style.display = 'block';
 }
 
@@ -283,9 +305,9 @@ function renderResults(data) {
         <div class="tags">${tags}</div>
       </div>
       <div class="solution-toggle">
-        <input type="checkbox" id="chk-${i}"
-          onchange="toggleSolution(this, ${JSON.stringify(p.title)}, ${JSON.stringify(p.tags_str)}, 'sol-${i}')">
-        <label for="chk-${i}">💡 Show AI solution (Gemini)</label>
+        <input type="checkbox" id="chk-${i}" data-title="${p.title.replace(/"/g,'&quot;')}" data-tags="${p.tags_str.replace(/"/g,'&quot;')}"
+          onchange="toggleSolution(this, this.dataset.title, this.dataset.tags, 'sol-${i}')">
+        <label for="chk-${i}">💡 Show AI solution (Groq)</label>
       </div>
       <div class="solution-box" id="sol-${i}"></div>
     </div>`;
@@ -298,17 +320,13 @@ async function toggleSolution(checkbox, title, tags, boxId) {
     box.classList.remove('open');
     return;
   }
-  if (!HAS_GEMINI_KEY) {
-    box.innerHTML = '⚠️ No Gemini API key set. See the banner above for instructions.';
-    box.classList.add('open');
-    return;
-  }
+  
   // Already loaded — just show it again
   if (box.dataset.loaded === '1') {
     box.classList.add('open');
     return;
   }
-  box.innerHTML = '<span class="sol-loading"><span class="spinner"></span> Gemini is thinking…</span>';
+  box.innerHTML = '<span class="sol-loading"><span class="spinner"></span> Groq is thinking…</span>';
   box.classList.add('open');
   try {
     const params = new URLSearchParams({ title, tags });
@@ -374,7 +392,6 @@ async function doSearch() {
 
 class Handler(http.server.BaseHTTPRequestHandler):
     problems    = []
-    gemini_key  = ""
 
     def log_message(self, fmt, *args):
         pass  # suppress access logs
@@ -382,8 +399,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path == "/":
-            html = HTML.replace("__HAS_GEMINI_KEY__", "true" if self.gemini_key else "false")
-            self._send(200, "text/html", html.encode())
+            self._send(200, "text/html", Handler.html.encode())
         elif parsed.path == "/api/search":
             self._handle_search(parsed.query)
         elif parsed.path == "/api/solution":
@@ -417,11 +433,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         title  = (params.get("title", [""])[0]).strip()
         tags   = (params.get("tags",  [""])[0]).strip()
 
-        if not self.gemini_key:
-            self._send(200, "application/json",
-                       json.dumps({"error": "No Gemini API key set."}).encode())
-            return
+        print(f"[AI] Solution requested for: {title}")
 
+        
         prompt = (
             f"You are an expert competitive programmer. "
             f"Give a clear solution for the Codeforces problem titled \"{title}\" "
@@ -434,9 +448,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         )
 
         try:
-            text = call_gemini(prompt, self.gemini_key)
+            print(f"[AI] Calling Groq...")
+            text = call_groq(prompt)
+            print(f"[AI] Success! Response length: {len(text)} chars")
             self._send(200, "application/json", json.dumps({"solution": text}).encode())
         except Exception as e:
+            import traceback
+            print(f"[AI] ERROR: {e}")
+            traceback.print_exc()
             self._send(200, "application/json", json.dumps({"error": str(e)}).encode())
 
     def _send(self, code: int, ctype: str, body: bytes):
@@ -463,18 +482,17 @@ def main():
     problems = load_dataset(args.dataset)
     print(f"Loaded {len(problems):,} problems from '{args.dataset}'")
 
-    gemini_key = os.environ.get("GEMINI_API_KEY", "")
-
-    if gemini_key:
-        print("Gemini API key found — AI solutions enabled! ✅")
+    if GROQ_API_KEY:
+        print("✅ GROQ_API_KEY found — AI solutions enabled (qwen-qwq-32b)")
     else:
-        print("No GEMINI_API_KEY found — AI solutions disabled.")
-        print("Get a free key at: https://aistudio.google.com/app/apikey")
-        print("Then run:  set GEMINI_API_KEY=your-key-here  (Windows)")
-        print("           export GEMINI_API_KEY='your-key-here'  (Mac/Linux)")
+        print("⚠️  GROQ_API_KEY not set — AI solutions disabled.")
+        print("   Get a free key at https://console.groq.com")
+        print("   Then run: set GROQ_API_KEY=your-key-here")
 
-    Handler.problems   = problems
-    Handler.gemini_key = gemini_key
+    html = HTML.replace("__HAS_GEMINI_KEY__", "true" if GROQ_API_KEY else "false")
+
+    Handler.problems = problems
+    Handler.html     = html
 
     server = http.server.HTTPServer(("", args.port), Handler)
     url    = f"http://localhost:{args.port}"
