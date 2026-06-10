@@ -19,18 +19,26 @@ AI Solutions (Groq) — генерира решенија за задачи ко
 Датасет: Codeforces Problem Dataset (~10,900 задачи)
 Формат: CSV / JSON
 
-Карактеристики на проектот -Семантичко пребарување — наоѓа задачи по значење користејќи Voyage AI embeddings -AI решенија — генерира пристап и C++ код за секоја задача преку Groq API -Keyword пребарување — брзо пребарување по клучни зборови (без API клуч) -Прикажување на најслични задачи
+Карактеристики на проектот 
+
+-Семантичко пребарување — наоѓа задачи по значење користејќи Voyage AI embeddings -AI решенија — генерира пристап и C++ код за секоја задача преку Groq API -Keyword пребарување — брзо пребарување по клучни зборови (без API клуч) 
+
+-Прикажување на најслични задачи
+
 -Филтрирање по тежина или тема -Лесен за користење интерфејс
 
 Очекуван резултат
 
 -Интерфејс каде корисникот внесува опис
+
 -Листа на најрелевантни задачи
+
 -Пример пребарување со реални резултати
 
 Инсталација — чекор по чекор
 
 1. Инсталирај Python
+   
 Преземи и инсталирај Python 3.10 или понов од https://www.python.org/downloads/
 
 За време на инсталација на Windows, штиклирај "Add Python to PATH"
@@ -47,14 +55,19 @@ python --version
 4. Клонирај го репото
    
 git clone https://github.com/vfilip008/Inteligentni_Sistemi_MIG.git
+
 cd Inteligentni_Sistemi_MIG
 
 6. Добијте бесплатен Groq API клуч
    
 Одете на https://console.groq.com
+
 Регистрирајте се / логирајте се
+
 Кликнете API Keys → Create API Key
+
 Копирајте го клучот
+
 Voyage AI API (за семантичко пребарување):
 
 1.Одете на https://dash.voyageai.com 2.Регистрирајте се / логирајте се 3.Кликнете API Keys → Create new key
@@ -66,13 +79,19 @@ Voyage AI API (за семантичко пребарување):
 Windows:
 
 set GROQ_API_KEY=вашиот-groq-клуч
+
 set ANTHROPIC_API_KEY=вашиот-voyage-клуч
+
 python search_engine.py --dataset CodeForces.csv
+
 Mac / Linux:
 
 export GROQ_API_KEY="вашиот-groq-клуч"
+
 export ANTHROPIC_API_KEY="вашиот-voyage-клуч"
+
 python search_engine.py --dataset CodeForces.csv
+
 Потоа отворете го прелистувачот на: http://localhost:5000
 
 set / export важи само за тековната терминал сесија. Ако го затворите терминалот, треба повторно да ги поставите клучевите пред следното стартување.
@@ -80,23 +99,40 @@ set / export важи само за тековната терминал сеси
 Прв пат: Системот ќе генерира embeddings за сите ~10,900 задачи (5-10 мин). После тоа се зачувуваат во cf_embeddings.pkl и следниот пат се вчитуваат веднаш.
 
 Само keyword пребарување (без API клучеви)
+
 Ако немате API клучеви, можете да го стартувате само со keyword пребарување:
 
 python search_engine.py --dataset CodeForces.csv
+
 Структура на проектот
+
 Inteligentni_Sistemi_MIG/
+
 ├── search_engine.py       # Главна апликација (веб сервер + пребарувач)
+
 ├── CodeForces.csv         # Датасет со ~10,900 Codeforces задачи
+
 ├── cf_embeddings.pkl      # Кеш на embeddings (се создава автоматски)
+
 └── README.md              # Овој документ
 Пример пребарувања
+
 Барање	Опис
+
 greedy	Задачи со greedy алгоритам
+
 shortest path grid	Наоѓање најкраток пат во мрежа
+
 dp knapsack	Динамичко програмирање, ранец
+
 binary search	Бинарно пребарување
+
 Технологии
+
 Python — стандардна библиотека (http.server, csv, json)
+
 Voyage AI API — embeddings за семантичка сличност (voyage-3 модел)
+
 Groq API — AI решенија (llama-3.3-70b-versatile, бесплатен tier)
+
 HTML/CSS/JS — веб интерфејс (без framework)
