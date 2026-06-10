@@ -1,98 +1,87 @@
 # Пребарувач на програмски проблеми
 
-**Учесници:** Филип Veljanovskи, Кирил Ангелковиќ  
-**Тип на проект:** Пребарување (Search)
+Учесници: Филип Велјановски, Кирил Ангелковиќ
+Тип на проект: Пребарување (Search)
 
-## Опис
-
-Овој проект претставува пребарувач за Codeforces програмски задачи кој им овозможува на корисниците да најдат релевантни задачи според опис, клучни зборови или проблемска идеја. Системот анализира наслови и тагови на задачи и го наоѓа најсличниот резултат.
+Опис
+Овој проект претставува пребарувач за програмерски задачи кој им овозможува на корисниците да најдат релевантни задачи според опис, клучни зборови или проблемска идеја. Системот анализира текстуални описи на задачи и пресметува сличност помеѓу нив. Наменет е за ученици што се подготвуваат за натпревари по програмирање. Корисен е бидејќи овозможува побрзо наоѓање задачи за вежбање на одредена тема. Проектот работи без рачно означени категории. Целта е ефикасно и точно пребарување.
 
 Поддржува два режими:
-- **Keyword Search** — брзо пребарување по клучни зборови, работи без API клуч
-- **Semantic (AI) Search** — паметно пребарување базирано на значење, користи Anthropic API
 
-**Датасет:** Kaggle – Codeforces Problem Dataset (~10,900 задачи)
+Keyword Search — брзо пребарување по клучни зборови, работи без API клуч
+AI Solutions (Groq) — генерира решенија за задачи користејќи Groq API (бесплатно)
+Датасет: Codeforces Problem Dataset (~10,900 задачи)
+Формат: CSV / JSON
 
----
+Карактеристики на проектот -Семантичко пребарување — наоѓа задачи по значење користејќи Voyage AI embeddings -AI решенија — генерира пристап и C++ код за секоја задача преку Groq API -Keyword пребарување — брзо пребарување по клучни зборови (без API клуч) -Прикажување на најслични задачи
+-Филтрирање по тежина или тема -Лесен за користење интерфејс
 
-## Инсталација и користење
+Очекуван резултат
+-Интерфејс каде корисникот внесува опис
+-Листа на најрелевантни задачи
+-Пример пребарување со реални резултати
 
-### Барања
+Инсталација — чекор по чекор
+1. Инсталирај Python
+Преземи и инсталирај Python 3.10 или понов од https://www.python.org/downloads/
 
-- Python 3.10 или понов
-- Интернет конекција (за семантичко пребарување)
+За време на инсталација на Windows, штиклирај "Add Python to PATH"
 
-### Чекор 1 — Клонирај го репото
+Провери дека работи:
 
-```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
-```
+python --version
+2. Инсталирај Git
+Преземи и инсталирај Git од https://git-scm.com/downloads
 
-### Чекор 2 — Стартувај го (keyword режим, без API клуч)
+3. Клонирај го репото
+git clone https://github.com/vfilip008/Inteligentni_Sistemi_MIG.git
+cd Inteligentni_Sistemi_MIG
+4. Добијте бесплатен Groq API клуч
+Одете на https://console.groq.com
+Регистрирајте се / логирајте се
+Кликнете API Keys → Create API Key
+Копирајте го клучот
+Voyage AI API (за семантичко пребарување):
 
-```bash
+1.Одете на https://dash.voyageai.com 2.Регистрирајте се / логирајте се 3.Кликнете API Keys → Create new key
+
+5. Стартувај го
+Отворете Command Prompt (cmd) во папката на проектот и извршете:
+
+Windows:
+
+set GROQ_API_KEY=вашиот-groq-клуч
+set ANTHROPIC_API_KEY=вашиот-voyage-клуч
 python search_engine.py --dataset CodeForces.csv
-```
+Mac / Linux:
 
-Отвори го прелистувачот на: **http://localhost:5000**
+export GROQ_API_KEY="вашиот-groq-клуч"
+export ANTHROPIC_API_KEY="вашиот-voyage-клуч"
+python search_engine.py --dataset CodeForces.csv
+Потоа отворете го прелистувачот на: http://localhost:5000
 
-### Чекор 3 — Семантичко пребарување (опционално)
+set / export важи само за тековната терминал сесија. Ако го затворите терминалот, треба повторно да ги поставите клучевите пред следното стартување.
 
-Постави го Anthropic API клучот пред стартување:
+Прв пат: Системот ќе генерира embeddings за сите ~10,900 задачи (5-10 мин). После тоа се зачувуваат во cf_embeddings.pkl и следниот пат се вчитуваат веднаш.
 
-**Mac / Linux:**
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-python search_engine.py --dataset CodeForces.csv --embed
-```
+Само keyword пребарување (без API клучеви)
+Ако немате API клучеви, можете да го стартувате само со keyword пребарување:
 
-**Windows:**
-```cmd
-set ANTHROPIC_API_KEY=sk-ant-...
-python search_engine.py --dataset CodeForces.csv --embed
-```
-
-Прв пат кога се стартува со `--embed`, системот генерира embeddings за сите задачи (~5-10 мин). После тоа се зачувуваат во `cf_embeddings.pkl` и следниот пат се вчитуваат веднаш.
-
----
-
-## Карактеристики
-
-- Пребарување по клучни зборови и по семантичко значење
-- Филтрирање по тежина (рејтинг) и по таг
-- Прикажување на директни линкови до Codeforces задачите
-- Визуелен резултат за сличност (само во semantic режим)
-- Работи без инсталирање на дополнителни Python пакети
-
----
-
-## Структура на проектот
-
-```
-cf-search/
-├── search_engine.py     # Главна апликација (веб сервер + пребарувач)
-├── CodeForces.csv       # Датасет со ~10,900 Codeforces задачи
-├── cf_embeddings.pkl    # Кеш на embeddings (се создава автоматски)
-└── README.md            # Овој документ
-```
-
----
-
-## Пример пребарувања
-
-| Барање | Режим |
-|---|---|
-| `shortest path grid obstacles` | keyword или semantic |
-| `count connected components undirected graph` | semantic |
-| `dp knapsack items weight` | keyword или semantic |
-| `string pattern matching` | keyword |
-
----
-
-## Технологии
-
-- **Python** — стандардна библиотека (http.server, csv, json, pickle)
-- **Anthropic API** — Voyage embeddings за семантичка сличност
-- **HTML/CSS/JS** — веб интерфејс (без framework)
-- **Датасет:** [Codeforces Problem Dataset на Kaggle](https://www.kaggle.com/datasets/muonneutrino/codeforces-problem-set)
+python search_engine.py --dataset CodeForces.csv
+Структура на проектот
+Inteligentni_Sistemi_MIG/
+├── search_engine.py       # Главна апликација (веб сервер + пребарувач)
+├── CodeForces.csv         # Датасет со ~10,900 Codeforces задачи
+├── cf_embeddings.pkl      # Кеш на embeddings (се создава автоматски)
+└── README.md              # Овој документ
+Пример пребарувања
+Барање	Опис
+greedy	Задачи со greedy алгоритам
+shortest path grid	Наоѓање најкраток пат во мрежа
+dp knapsack	Динамичко програмирање, ранец
+binary search	Бинарно пребарување
+Технологии
+Python — стандардна библиотека (http.server, csv, json)
+Voyage AI API — embeddings за семантичка сличност (voyage-3 модел)
+Groq API — AI решенија (llama-3.3-70b-versatile, бесплатен tier)
+HTML/CSS/JS — веб интерфејс (без framework)
